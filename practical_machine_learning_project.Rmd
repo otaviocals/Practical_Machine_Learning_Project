@@ -107,7 +107,7 @@ confusionMatrix(prediction2, validationset$classe)
 
 ## Picking a Model
 
-We verify now that the Decision Tree Model presented a 0.7433 accuracy rate on the cross-validation set while the Random Tree Model presented a 0.992 accuracy rate on the cross-validation set. Therefore we will use the Random Forest Model to predict our test set.
+We verify now that the Decision Tree Model presented a 0.7433 accuracy rate on the cross-validation set while the Random Tree Model presented a 0.992 accuracy rate on the cross-validation set. Therefore we will use the Random Forest Model to predict our test set. Since we have such a high accuracy rate, our out of sample error should be none or very close to none.
 
 # Predicting
 
