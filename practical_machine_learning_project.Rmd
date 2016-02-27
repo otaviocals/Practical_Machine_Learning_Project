@@ -1,0 +1,120 @@
+---
+title: "Practical Machine Learning - Course Project"
+author: "Otavio Cals"
+output: html_document
+---
+
+# Introduction
+
+In this project we explored and analyzed the Human Activity Recognition project data gathered by the Groupware@LES team about personal activity. Our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to quantify how well they do their physical activities. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways, those being:  
+  * A: exactly according to the specification  
+  * B: throwing the elbows to the front  
+  * C: lifting the dumbbell only halfway  
+  * D: lowering the dumbbell only halfway  
+  * E: throwing the hips to the front  
+
+We will use a train set and a cross-validation set to train two models and choose the best one to predict our test set.
+
+# Loading the Data
+
+First we load the date from the HAR project.
+The Training Data is avaiable here:  
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The Testing Data is avaiable here:  
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+```{r cache=TRUE}
+downcsv <- function(url, nas) {
+    temp <- tempfile()
+    download.file(url, temp, method = "curl")
+    data <- read.csv(temp, na.strings = nas)
+    unlink(temp)
+    return(data)
+}
+
+trainurl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+train <- downcsv(trainurl, c("", "NA", "#DIV/0!"))
+
+testurl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+test <- downcsv(testurl, c("", "NA", "#DIV/0!"))
+```
+
+Now we analize the number of observations and features, and the distribution of the measured stances A,B,C,D,E:
+
+```{r  cache=TRUE}
+dim(train)
+table(train$classe)
+```
+
+# Preprocessing
+
+we start by loading the libraries that we will use in this analisys
+
+```{r cache=TRUE}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+```
+
+
+Then we continue by splitting our training data into a training set and a validation set so that we can validate our model. For reproducibility, we will set a seed value. We will remove columns with all missing values and some variables are irrelevant to our current project.
+
+```{r cache=TRUE}
+set.seed(115687)
+
+train<-train[,colSums(is.na(train)) == 0]
+test <-test[,colSums(is.na(test)) == 0]
+
+train <-train[,-c(1:7)]
+test <-test[,-c(1:7)]
+
+train_set <- createDataPartition(train$classe, p = 0.75, list = FALSE)
+trainingset <- train[train_set, ]
+validationset <- train[-train_set, ]
+```
+
+# Model Training
+
+## Training: Decision Tree Model
+
+We will train a Descision Tree Model using the rpart library and then plot it using rpart.plot
+
+```{r cache=TRUE}
+model1 <- rpart(classe ~ ., data=trainingset, method="class")
+prediction1 <- predict(model1, validationset, type = "class")
+
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+```
+
+Now we test our model using by calculating it's confusion matrix.
+
+```{r cache=TRUE}
+confusionMatrix(prediction1, validationset$classe)
+```
+
+## Training: Random Forest Model
+
+Now we train a Random Forest Model and calculate it's confusion matrix.
+
+```{r cache=TRUE}
+model2 <- randomForest(classe ~. , data=trainingset, method="class")
+prediction2 <- predict(model2, validationset, type = "class")
+
+confusionMatrix(prediction2, validationset$classe)
+```
+
+## Picking a Model
+
+We verify now that the Decision Tree Model presented a 0.7433 accuracy rate on the cross-validation set while the Random Tree Model presented a 0.992 accuracy rate on the cross-validation set. Therefore we will use the Random Forest Model to predict our test set.
+
+# Predicting
+
+We now perform our prediction on the test set using the chosen model and conclude that the classes of each of the 20 individuals of the test set are:
+
+```{r cache=TRUE}
+final_prediction <- predict(model2, test, type="class")
+final_prediction
+```
+
